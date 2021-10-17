@@ -1,27 +1,43 @@
 import React,{useEffect, useState} from "react";
 import AppRouter from "components/Router";
 import {authService} from "myBase";
-import {onAuthStateChanged} from "firebase/auth";
+import {onAuthStateChanged,updateProfile} from "firebase/auth";
 
 
 function App() {
   const [init,setInit] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userObj,setUserObj] = useState(null);
   useEffect(()=>{
     onAuthStateChanged(authService,(user)=>{
       if(user){
-        setIsLoggedIn(true);
-        setUserObj(user);
+        if(user.displayName==null){
+          const ind = user.email.indexOf("@")
+          const end = user.email.substring(0,ind)
+          updateProfile(user,{displayName:end});
+        }
+        setUserObj({
+          displayName : user.displayName,
+          uid : user.uid,
+        });
       }else{
-        setIsLoggedIn(false);
+        setUserObj(null);
       }
       setInit(true)
     });
   },[]);
+  const refreshUser = () => {
+    const user = authService.currentUser;
+    setUserObj({
+      displayName : user.displayName,
+      uid : user.uid,
+    });
+  }
   return(
     <>
-      {init ? <AppRouter isLoggedIn={isLoggedIn} userObj={userObj}/> : "Initializing"}
+      {init ? <AppRouter 
+                refreshUser = {refreshUser}
+                isLoggedIn={Boolean(userObj)}
+                userObj={userObj}/> : "Initializing"}
       <footer>&copy; {new Date().getFullYear()} Nwitter</footer>
     </>
   );
